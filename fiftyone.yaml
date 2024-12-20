@@ -1,0 +1,9 @@
+name: "@harpreetsahota/depth_pro_plugin"
+description: Perfom zero-shot metric monocular depth estimation using the Apple Depth Pro model
+version: 1.0.0
+fiftyone:
+  version: "*"
+url: https://github.com/harpreetsahota204/depthpro-plugin
+license: Apache 2.0
+operators:
+  - depth_pro_estimator
