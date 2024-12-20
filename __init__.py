@@ -33,7 +33,7 @@ class DepthProEstimator(foo.Operator):
     def config(self):
         return foo.OperatorConfig(
             # The operator's URI: f"{plugin_name}/{name}"
-            name="",  # required
+            name="depth_pro_estimator",  # required
 
             # The display name of the operator
             label="Depth estimation via Depth Pro",  # required
@@ -142,7 +142,7 @@ class DepthProEstimator(foo.Operator):
             sample_collection,
             depth_field,
             depth_type,
-            delegate=False
+            delegate=delegate
             )
 
 def register(p):
