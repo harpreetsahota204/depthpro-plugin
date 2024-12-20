@@ -27,7 +27,7 @@ class DepthProModel(Model):
     FiftyOne Model wrapper for Apple's DepthPro model.
     """
 
-    def __init__(self, inverse_depth):
+    def __init__(self, depth_type):
         """
         Initialize the model.
         
@@ -38,7 +38,7 @@ class DepthProModel(Model):
         self.device = get_device()
         self.model = None
         self.transform = None
-        self.inverse_depth = inverse_depth
+        self.depth_type = depth_type
         
         # Download and initialize the model
         self._setup_model()
@@ -84,7 +84,7 @@ class DepthProModel(Model):
         Returns:
             tuple: (normalized_map, metadata_dict)
         """
-        if self.inverse_depth:
+        if self.depth_type =="inverse":
             # Convert to inverse depth
             inverse_depth = 1.0 / depth_np
             
@@ -92,7 +92,7 @@ class DepthProModel(Model):
             normalized_map = ((inverse_depth - np.min(inverse_depth)) / 
                             (np.max(inverse_depth) - np.min(inverse_depth)) * 255).astype("uint8")
             
-        else:
+        if self.depth_type =="regular":
             # Normalize regular depth to 0-255
             normalized_map = ((depth_np - np.min(depth_np)) / 
                             (np.max(depth_np) - np.min(depth_np)) * 255).astype("uint8")
@@ -158,7 +158,7 @@ class DepthProModel(Model):
 def run_depth_prediction(
     dataset, 
     depth_field, 
-    inverse_depth
+    depth_type
 ):
     """
     Runs depth prediction on a FiftyOne dataset.
@@ -170,6 +170,6 @@ def run_depth_prediction(
         inverse_depth (bool): If True, use inverse depth for visualization
     """
     model = DepthProModel(
-        inverse_depth=inverse_depth
+        depth_type=depth_type
     )
     dataset.apply_model(model, label_field=depth_field)
