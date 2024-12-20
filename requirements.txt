@@ -1,0 +1,4 @@
+huggingface-hub
+torch
+transformers
+git+https://github.com/apple/ml-depth-pro.git#egg=depth_pro
