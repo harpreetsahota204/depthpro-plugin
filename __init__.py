@@ -41,7 +41,7 @@ class DepthProEstimator(foo.Operator):
             # A description for the operator
             description="Perfom zero-shot metric monocular depth estimation using the Apple Depth Pro model",
 
-            icon="/assets/dpth-perception.svg",
+            icon="/assets/depth-perception.svg",
 
             )
 
