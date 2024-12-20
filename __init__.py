@@ -13,7 +13,6 @@ with add_sys_path(os.path.dirname(os.path.abspath(__file__))):
 def _handle_calling(
         uri, 
         sample_collection, 
-        model_name,
         depth_field,
         depth_type,
         delegate=False
@@ -21,7 +20,6 @@ def _handle_calling(
     ctx = dict(dataset=sample_collection)
 
     params = dict(
-        model_name=model_name,
         depth_field=depth_field,
         depth_type=depth_type,
         delegate=delegate
