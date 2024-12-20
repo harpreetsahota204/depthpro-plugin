@@ -15,7 +15,7 @@ def _handle_calling(
         sample_collection, 
         model_name,
         depth_field,
-        inverse_depth,
+        depth_type,
         delegate=False
         ):
     ctx = dict(dataset=sample_collection)
@@ -23,7 +23,7 @@ def _handle_calling(
     params = dict(
         model_name=model_name,
         depth_field=depth_field,
-        inverse_depth=inverse_depth,
+        depth_type=depth_type,
         delegate=delegate
         )
     return foo.execute_operator(uri, ctx, params=params)
