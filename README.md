@@ -64,7 +64,7 @@ You can compute the depth map directly through the FiftyOne App:
 
 ### `depth_pro_estimator`
 
-Computes
+Computes a depth math using the Apple Depth Pro model.
 
 ## Operator usage via SDK
 
