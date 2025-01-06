@@ -27,14 +27,18 @@ fiftyone plugins requirements @harpreetsahota/depth_pro_plugin --install
 
 The plugin supports two types of depth outputs:
 
-- **Regular Depth**: Direct physical distance measurement in meters. Preferred for autonomous driving, precise measurements, and safety-critical applications. Better for accurate obstacle detection and motion planning.
+**Regular Depth**
+
+Direct physical distance measurement in meters. Preferred for autonomous driving, precise measurements, and safety-critical applications. Better for accurate obstacle detection and motion planning.
 
 - Linear depth representation
 - Better for absolute distance measurements
 - Creating 3D reconstructions
 - Common in autonomous driving
 
-- **Inverse Depth**: Reciprocal of depth (1/distance). Better for visualizing near-field details, indoor environments, and SLAM applications. Provides more detail in close ranges where depth changes are significant.
+**Inverse Depth**
+
+Reciprocal of depth (1/distance). Better for visualizing near-field details, indoor environments, and SLAM applications. Provides more detail in close ranges where depth changes are significant.
 
 - Better visualization of nearby objects
 - More detail in close range
