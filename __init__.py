@@ -1,5 +1,4 @@
 import os
-import base64
 
 from fiftyone.core.utils import add_sys_path
 import fiftyone.operators as foo
@@ -72,8 +71,6 @@ class DepthProEstimator(foo.Operator):
             view=depth_types,
             required=True
         )
-
-        # depth_field = types.String()
 
         inputs.str(
             "depth_field",            
