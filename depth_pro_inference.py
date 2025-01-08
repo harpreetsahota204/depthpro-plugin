@@ -2,15 +2,19 @@ import os
 import torch
 import numpy as np
 from PIL import Image
-from typing import Dict
+from typing import Dict, List
 
 import fiftyone as fo
 from fiftyone import Model
 
 import depth_pro
 
-def get_device():
-    """Helper function to determine the best available device."""
+def get_device() -> str:
+    """Helper function to determine the best available device.
+    
+    Returns:
+        str: Device type ('cuda', 'mps', or 'cpu')
+    """
     if torch.cuda.is_available():
         device = "cuda"
         print(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
@@ -22,35 +26,43 @@ def get_device():
         print("Using CPU device")
     return device
 
-class DepthProModel(Model):
-    """
-    FiftyOne Model wrapper for Apple's DepthPro model.
-    """
 
-    def __init__(self, depth_type):
-        """
-        Initialize the model.
+class DepthProModel(Model):
+    """FiftyOne Model wrapper for Apple's DepthPro model."""
+
+    def __init__(self, depth_type: str) -> None:
+        """Initialize the model.
         
         Args:
-            checkpoint_dir (str): Directory where the model checkpoints are stored
-            inverse_depth (bool): If True, use inverse depth for visualization
+            depth_type (str): Type of depth visualization ('inverse' or 'regular')
         """
+        valid_types = {"inverse", "regular"}
+        if depth_type not in valid_types:
+            raise ValueError(f"depth_type must be one of {valid_types}")
+        self.depth_type = depth_type
+        
         self.device = get_device()
         self.model = None
         self.transform = None
-        self.depth_type = depth_type
         
-        # Download and initialize the model
-        self._setup_model()
+        # Ensure model file exists
+        self._download_model_if_needed()
 
-    def _setup_model(self):
-        """Downloads and initializes the DepthPro model."""
-        os.makedirs("checkpoints", exist_ok=True)
-        
-        if not os.path.exists(os.path.join("checkpoints", "depth_pro.pt")):
-            print("Downloading DepthPro model...")
-            os.system(f"huggingface-cli download --local-dir checkpoints apple/DepthPro")
-            
+    def _download_model_if_needed(self) -> None:
+        """Downloads the DepthPro model if not already present."""
+        try:
+            os.makedirs("checkpoints", exist_ok=True)
+            model_path = os.path.join("checkpoints", "depth_pro.pt")
+            if not os.path.exists(model_path):
+                print("Downloading DepthPro model...")
+                result = os.system(f"huggingface-cli download --local-dir checkpoints apple/DepthPro")
+                if result != 0:
+                    raise RuntimeError("Model download failed")
+        except Exception as e:
+            raise RuntimeError(f"Failed to download model: {str(e)}")
+
+    def _setup_model(self) -> None:
+        """Initializes the DepthPro model and transform."""
         if self.model is None:
             self.model, self.transform = depth_pro.create_model_and_transforms(
                 device=self.device,
@@ -62,27 +74,27 @@ class DepthProModel(Model):
     def media_type(self):
         return "image"
 
-    def _process_depth_map(self, depth_np: np.ndarray) -> tuple:
-        """
-        Process depth map based on visualization preference.
-        
-        For inverse depth (1/depth):
-        - Better visualization of nearby objects
-        - More detail in close range
-        - Doing visual SLAM or Structure from Motion
-        - Visualizing indoor environments
-
-        For regular depth:
-        - Linear depth representation
-        - Better for absolute distance measurements
-        - Creating 3D reconstructions
-        - Common in autonomous driving
+    def _process_depth_map(self, depth_np: np.ndarray) -> np.ndarray:
+        """Process depth map based on visualization preference.
         
         Args:
             depth_np (np.ndarray): Raw depth map in meters
             
         Returns:
-            tuple: (normalized_map, metadata_dict)
+            np.ndarray: Normalized depth map as uint8 array (0-255)
+            
+        Note:
+            For inverse depth (1/depth):
+            - Better visualization of nearby objects
+            - More detail in close range
+            - Useful for visual SLAM or Structure from Motion
+            - Better for indoor environments
+
+            For regular depth:
+            - Linear depth representation
+            - Better for absolute distance measurements
+            - Ideal for 3D reconstructions
+            - Common in autonomous driving
         """
         if self.depth_type =="inverse":
             # Convert to inverse depth
@@ -99,15 +111,14 @@ class DepthProModel(Model):
             
         return normalized_map
 
-    def _predict(self, image: Image.Image) -> Dict:
-        """
-        Performs depth prediction on a single image.
+    def _predict(self, image: Image.Image) -> Dict[str, fo.Heatmap]:
+        """Perform depth prediction on a single image.
 
         Args:
-            image (PIL.Image.Image): The input image
+            image (Image.Image): The input image
 
         Returns:
-            Dict: Contains depth heatmap and metadata
+            Dict[str, fo.Heatmap]: Dictionary containing depth heatmap
         """
         if self.model is None:
             self._setup_model()
@@ -134,18 +145,28 @@ class DepthProModel(Model):
 
             return result
 
-    def predict(self, image: np.ndarray) -> Dict:
-        """
-        Predicts depth for the given image.
+    def predict(self, image: np.ndarray) -> Dict[str, fo.Heatmap]:
+        """Predict depth for the given image.
 
         Args:
             image (np.ndarray): The input image as a numpy array
 
         Returns:
-            Dict: Contains depth heatmap and metadata
+            Dict[str, fo.Heatmap]: Dictionary containing depth heatmap
         """
         image_pil = Image.fromarray(image)
         return self._predict(image_pil)
+
+    def predict_all(self, images: List[np.ndarray]) -> List[Dict[str, fo.Heatmap]]:
+        """Perform prediction on a list of images.
+
+        Args:
+            images (List[np.ndarray]): List of input images as numpy arrays
+
+        Returns:
+            List[Dict[str, fo.Heatmap]]: List of prediction dictionaries for each image
+        """
+        return [self.predict(image) for image in images]
     
     def __del__(self):
         """Cleanup when the model is deleted."""
@@ -156,18 +177,16 @@ class DepthProModel(Model):
             torch.cuda.empty_cache()
 
 def run_depth_prediction(
-    dataset, 
-    depth_field, 
-    depth_type
-):
-    """
-    Runs depth prediction on a FiftyOne dataset.
+    dataset: fo.Dataset,
+    depth_field: str,
+    depth_type: str
+) -> None:
+    """Run depth prediction on a FiftyOne dataset.
     
     Args:
-        dataset: FiftyOne dataset
+        dataset (fo.Dataset): FiftyOne dataset to process
         depth_field (str): Field name to store depth predictions
-        checkpoint_dir (str): Directory to store model checkpoints
-        inverse_depth (bool): If True, use inverse depth for visualization
+        depth_type (str): Type of depth visualization ('inverse' or 'regular')
     """
     model = DepthProModel(
         depth_type=depth_type
